@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"encoding/json"
 )
 
 const startupMessage = `
@@ -26,15 +27,51 @@ const startupMessage = `
 [0m
 `
 
+type Payload struct {
+    Stuff Data
+}
+type Data struct {
+    Fruit Fruits
+    Veggies Vegetables
+}
+type Fruits map[string]int
+type Vegetables map[string]int
+
+
+func jsonRoute(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	fruits := make(map[string]int)
+	fruits["Apples"] = 25
+	fruits["Oranges"] = 10
+
+	vegetables := make(map[string]int)
+	vegetables["Carrots"] = 10
+	vegetables["Beets"] = 0
+
+	data := Data{fruits, vegetables}
+	//p := Payload{d}
+
+	w.WriteHeader(http.StatusCreated)
+	json.NewEncoder(w).Encode(data)
+}
+
+func homePage(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello! you've requested %s\n", r.URL.Path)
+	fmt.Fprintf(w, "This is a second commit\n")
+}
+
+func setupRoutes() {
+	http.HandleFunc("/json_route", jsonRoute)
+	http.HandleFunc("/", homePage)
+}
+
 func main() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Hello! you've requested %s\n", r.URL.Path)
-		fmt.Fprintf(w, "This is a second commit\n")
-	})
+	setupRoutes()
 
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "80"
+		port = "8080"
 	}
 
 	for _, line := range strings.Split(startupMessage, "\n") {
